@@ -1,5 +1,12 @@
 venv/
 __pycache__/
 *.pyc
+
 encrypted_files/
-decrypted_files/git add 
+decrypted_files/
+test_files/
+
+.env
+*.key
+*.pem
+*.enc
