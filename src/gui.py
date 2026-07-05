@@ -1,308 +1,221 @@
-import math
-import threading
+import customtkinter as ctk
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+import random
+import math
 
-from crypto_utils import encrypt_file, decrypt_file
-
-
-selected_file = ""
+ctk.set_appearance_mode("dark")
 
 
-def choose_file():
-    file_path = filedialog.askopenfilename()
-    if file_path:
-        file_path_var.set(file_path)
-        log_message(f"Selected file: {file_path}")
+class ArksEncrypPreview(ctk.CTk):
+    def __init__(self):
+        super().__init__()
 
+        self.title("Ark's Encryp")
+        self.geometry("1000x650")
+        self.resizable(False, False)
 
-def toggle_password(entry, button):
-    if entry.cget("show") == "*":
-        entry.config(show="")
-        button.config(text="Hide")
-    else:
-        entry.config(show="*")
-        button.config(text="Show")
+        self.width = 1000
+        self.height = 650
+        self.particles = []
+        self.animation_progress = 0
+        self.can_click = False
+        self.splash_visible = True
 
+        self.canvas = tk.Canvas(self, bg="#020617", highlightthickness=0)
+        self.canvas.pack(fill="both", expand=True)
 
-def log_message(message):
-    activity_log.insert(tk.END, message + "\n")
-    activity_log.see(tk.END)
+        self.create_text_particles("Ark's Encryp")
+        self.animate_dust()
 
+        self.bind("<Button-1>", self.enter_app)
 
-def style_button(button, normal_color, hover_color):
-    button.config(
-        bg=normal_color,
-        fg="white",
-        activebackground=hover_color,
-        activeforeground="white",
-        relief="flat",
-        cursor="hand2",
-        font=("Segoe UI", 10, "bold"),
-    )
+    def create_text_particles(self, text):
+        temp = tk.Canvas(self, width=self.width, height=self.height)
+        temp.update()
 
-    button.bind("<Enter>", lambda event: button.config(bg=hover_color))
-    button.bind("<Leave>", lambda event: button.config(bg=normal_color))
-    button.bind("<ButtonPress>", lambda event: button.config(relief="sunken"))
-    button.bind("<ButtonRelease>", lambda event: button.config(relief="flat"))
-
-
-def run_encrypt():
-    input_file = file_path_var.get()
-    access_password = access_password_var.get()
-    encryption_password = encryption_password_var.get()
-
-    if not input_file:
-        messagebox.showerror("Error", "Please select a file.")
-        return
-
-    if not access_password or not encryption_password:
-        messagebox.showerror("Error", "Both passwords are required.")
-        return
-
-    output_file = input_file + ".enc"
-
-    def task():
-        try:
-            progress_bar.start(10)
-            log_message("Encryption started...")
-            encrypt_file(input_file, output_file, access_password, encryption_password)
-            file_path_var.set(output_file)
-            log_message(f"Encrypted successfully: {output_file}")
-            messagebox.showinfo("Success", "File encrypted successfully.")
-        except Exception as error:
-            log_message(f"Error: {error}")
-            messagebox.showerror("Error", str(error))
-        finally:
-            progress_bar.stop()
-
-    threading.Thread(target=task, daemon=True).start()
-
-
-def run_decrypt():
-    input_file = file_path_var.get()
-    access_password = access_password_var.get()
-    encryption_password = encryption_password_var.get()
-
-    if not input_file:
-        messagebox.showerror("Error", "Please select a file.")
-        return
-
-    if not access_password or not encryption_password:
-        messagebox.showerror("Error", "Both passwords are required.")
-        return
-
-    output_file = input_file[:-4] if input_file.endswith(".enc") else input_file + ".decrypted"
-
-    def task():
-        try:
-            progress_bar.start(10)
-            log_message("Decryption started...")
-            decrypt_file(input_file, output_file, access_password, encryption_password)
-            file_path_var.set(output_file)
-            log_message(f"Decrypted successfully: {output_file}")
-            messagebox.showinfo("Success", "File decrypted successfully.")
-        except Exception as error:
-            log_message(f"Error: {error}")
-            messagebox.showerror("Error", str(error))
-        finally:
-            progress_bar.stop()
-
-    threading.Thread(target=task, daemon=True).start()
-
-
-def animate_background():
-    canvas.delete("circle")
-
-    width = 850
-    height = 620
-
-    for i in range(8):
-        x = 100 + i * 110
-        y = 120 + math.sin(animation_counter[0] / 20 + i) * 45
-        size = 45 + math.sin(animation_counter[0] / 15 + i) * 12
-
-        canvas.create_oval(
-            x,
-            y,
-            x + size,
-            y + size,
-            fill="#1f2a44",
-            outline="",
-            tags="circle",
+        font = ("Segoe UI", 72, "bold")
+        temp.create_text(
+            self.width // 2,
+            self.height // 2,
+            text=text,
+            font=font,
+            fill="white"
         )
 
-    animation_counter[0] += 1
-    root.after(40, animate_background)
+        self.update()
+
+        # Manually create particle target positions in text-like layout
+        target_points = []
+        start_x = 250
+        start_y = 300
+
+        for i in range(420):
+            x = start_x + (i % 70) * 7
+            y = start_y + (i // 70) * 10
+
+            # create a rough text cloud band
+            if random.random() > 0.25:
+                target_points.append((x, y))
+
+        for tx, ty in target_points:
+            self.particles.append({
+                "x": random.randint(0, self.width),
+                "y": random.randint(0, self.height),
+                "tx": tx,
+                "ty": ty,
+                "r": random.uniform(1.5, 3.2),
+                "color": random.choice(["#38bdf8", "#60a5fa", "#e0f2fe"]),
+                "float": random.uniform(0, math.pi * 2)
+            })
+
+    def animate_dust(self):
+        self.canvas.delete("all")
+
+        self.animation_progress += 0.006
+
+        if self.animation_progress > 1:
+            self.animation_progress = 1
+            self.can_click = True
+
+        eased = self.ease_out_cubic(self.animation_progress)
+
+        for p in self.particles:
+            float_offset = math.sin(p["float"] + self.animation_progress * 10) * 3
+
+            x = p["x"] + (p["tx"] - p["x"]) * eased
+            y = p["y"] + (p["ty"] - p["y"]) * eased + float_offset
+
+            self.canvas.create_oval(
+                x,
+                y,
+                x + p["r"],
+                y + p["r"],
+                fill=p["color"],
+                outline=""
+            )
+
+        # Glow title appears gradually after dust forms
+        if self.animation_progress > 0.65:
+            alpha_text = int((self.animation_progress - 0.65) / 0.35 * 255)
+            alpha_text = min(alpha_text, 255)
+
+            self.canvas.create_text(
+                self.width // 2,
+                290,
+                text="Ark's Encryp",
+                font=("Segoe UI", 62, "bold"),
+                fill="#e0f2fe"
+            )
+
+            self.canvas.create_text(
+                self.width // 2,
+                370,
+                text="Secure. Minimal. Encrypted.",
+                font=("Segoe UI", 18),
+                fill="#94a3b8"
+            )
+
+        if self.can_click:
+            self.canvas.create_text(
+                self.width // 2,
+                455,
+                text="Click anywhere to begin",
+                font=("Segoe UI", 15, "bold"),
+                fill="#38bdf8"
+            )
+
+        self.after(25, self.animate_dust)
+
+    def ease_out_cubic(self, t):
+        return 1 - pow(1 - t, 3)
+
+    def ease_in_out_cubic(self, t):
+        if t < 0.5:
+            return 4 * t * t * t
+        return 1 - pow(-2 * t + 2, 3) / 2
+
+    def create_main_app(self):
+        self.main_frame = ctk.CTkFrame(self, width=1000, height=650, fg_color="#020617")
+        self.main_frame.place(x=1000, y=0)
+
+        sidebar = ctk.CTkFrame(self.main_frame, width=230, height=610, corner_radius=25, fg_color="#0f172a")
+        sidebar.place(x=25, y=20)
+
+        ctk.CTkLabel(sidebar, text="Ark's Encryp", font=("Segoe UI", 26, "bold")).place(x=30, y=35)
+
+        for i, item in enumerate(["Dashboard", "Encrypt", "Decrypt", "Activity", "Settings"]):
+            ctk.CTkButton(
+                sidebar,
+                text=item,
+                width=170,
+                height=42,
+                corner_radius=14,
+                fg_color="#1e293b",
+                hover_color="#2563eb"
+            ).place(x=30, y=130 + i * 58)
+
+        main_card = ctk.CTkFrame(self.main_frame, width=700, height=610, corner_radius=30, fg_color="#0f172a")
+        main_card.place(x=275, y=20)
+
+        ctk.CTkLabel(main_card, text="Secure File Encryption", font=("Segoe UI", 32, "bold")).place(x=40, y=35)
+
+        drop_box = ctk.CTkFrame(
+            main_card,
+            width=610,
+            height=120,
+            corner_radius=25,
+            fg_color="#111827",
+            border_width=2,
+            border_color="#1d4ed8"
+        )
+        drop_box.place(x=45, y=120)
+
+        ctk.CTkLabel(drop_box, text="📂 Drag your file here or browse", font=("Segoe UI", 20, "bold")).place(
+            relx=0.5, rely=0.45, anchor="center"
+        )
+
+        ctk.CTkButton(drop_box, text="Browse File", width=140, height=36, corner_radius=14).place(
+            relx=0.5, rely=0.75, anchor="center"
+        )
+
+        ctk.CTkLabel(main_card, text="Access Password", font=("Segoe UI", 14, "bold")).place(x=50, y=275)
+        ctk.CTkEntry(main_card, width=520, height=45, corner_radius=14, show="*").place(x=50, y=305)
+
+        ctk.CTkLabel(main_card, text="Encryption Password", font=("Segoe UI", 14, "bold")).place(x=50, y=370)
+        ctk.CTkEntry(main_card, width=520, height=45, corner_radius=14, show="*").place(x=50, y=400)
+
+        ctk.CTkButton(main_card, text="Encrypt File", width=170, height=50, corner_radius=18, fg_color="#16a34a").place(x=80, y=520)
+        ctk.CTkButton(main_card, text="Decrypt File", width=170, height=50, corner_radius=18, fg_color="#dc2626").place(x=270, y=520)
+        ctk.CTkButton(main_card, text="View File", width=170, height=50, corner_radius=18, fg_color="#2563eb").place(x=460, y=520)
+
+    def enter_app(self, event=None):
+        if not self.can_click or not self.splash_visible:
+            return
+
+        self.splash_visible = False
+        self.create_main_app()
+        self.slide_step = 0
+        self.slide_transition()
+
+    def slide_transition(self):
+        self.slide_step += 0.018
+
+        if self.slide_step >= 1:
+            self.canvas.destroy()
+            self.main_frame.place(x=0, y=0)
+            return
+
+        eased = self.ease_in_out_cubic(self.slide_step)
+
+        splash_x = int(-1000 * eased)
+        main_x = int(1000 - 1000 * eased)
+
+        self.canvas.place(x=splash_x, y=0)
+        self.main_frame.place(x=main_x, y=0)
+
+        self.after(16, self.slide_transition)
 
 
-root = tk.Tk()
-root.title("File Encryption Tool")
-root.geometry("850x620")
-root.resizable(False, False)
-
-canvas = tk.Canvas(root, width=850, height=620, bg="#0f172a", highlightthickness=0)
-canvas.place(x=0, y=0)
-
-animation_counter = [0]
-
-main_frame = tk.Frame(root, bg="#111827")
-main_frame.place(relx=0.5, rely=0.5, anchor="center", width=720, height=540)
-
-file_path_var = tk.StringVar()
-access_password_var = tk.StringVar()
-encryption_password_var = tk.StringVar()
-
-title = tk.Label(
-    main_frame,
-    text="Secure File Encryption Tool",
-    font=("Segoe UI", 22, "bold"),
-    fg="#ffffff",
-    bg="#111827",
-)
-title.pack(pady=18)
-
-subtitle = tk.Label(
-    main_frame,
-    text="Encrypt and decrypt files with dual password protection",
-    font=("Segoe UI", 10),
-    fg="#9ca3af",
-    bg="#111827",
-)
-subtitle.pack(pady=2)
-
-file_frame = tk.Frame(main_frame, bg="#111827")
-file_frame.pack(pady=18)
-
-file_entry = tk.Entry(
-    file_frame,
-    textvariable=file_path_var,
-    width=55,
-    font=("Segoe UI", 10),
-    bg="#1f2937",
-    fg="white",
-    insertbackground="white",
-    relief="flat",
-)
-file_entry.pack(side=tk.LEFT, ipady=8, padx=5)
-
-browse_button = tk.Button(file_frame, text="Browse", command=choose_file, width=12)
-browse_button.pack(side=tk.LEFT, ipady=5)
-style_button(browse_button, "#2563eb", "#1d4ed8")
-
-access_frame = tk.Frame(main_frame, bg="#111827")
-access_frame.pack(pady=8)
-
-access_label = tk.Label(
-    access_frame,
-    text="Access Password",
-    fg="#e5e7eb",
-    bg="#111827",
-    width=18,
-    anchor="w",
-)
-access_label.pack(side=tk.LEFT)
-
-access_entry = tk.Entry(
-    access_frame,
-    textvariable=access_password_var,
-    show="*",
-    width=35,
-    bg="#1f2937",
-    fg="white",
-    insertbackground="white",
-    relief="flat",
-)
-access_entry.pack(side=tk.LEFT, ipady=7, padx=5)
-
-show_access_button = tk.Button(
-    access_frame,
-    text="Show",
-    width=8,
-    command=lambda: toggle_password(access_entry, show_access_button),
-)
-show_access_button.pack(side=tk.LEFT, ipady=4)
-style_button(show_access_button, "#374151", "#4b5563")
-
-encryption_frame = tk.Frame(main_frame, bg="#111827")
-encryption_frame.pack(pady=8)
-
-encryption_label = tk.Label(
-    encryption_frame,
-    text="Encryption Password",
-    fg="#e5e7eb",
-    bg="#111827",
-    width=18,
-    anchor="w",
-)
-encryption_label.pack(side=tk.LEFT)
-
-encryption_entry = tk.Entry(
-    encryption_frame,
-    textvariable=encryption_password_var,
-    show="*",
-    width=35,
-    bg="#1f2937",
-    fg="white",
-    insertbackground="white",
-    relief="flat",
-)
-encryption_entry.pack(side=tk.LEFT, ipady=7, padx=5)
-
-show_encryption_button = tk.Button(
-    encryption_frame,
-    text="Show",
-    width=8,
-    command=lambda: toggle_password(encryption_entry, show_encryption_button),
-)
-show_encryption_button.pack(side=tk.LEFT, ipady=4)
-style_button(show_encryption_button, "#374151", "#4b5563")
-
-button_frame = tk.Frame(main_frame, bg="#111827")
-button_frame.pack(pady=20)
-
-encrypt_button = tk.Button(
-    button_frame,
-    text="Encrypt File",
-    command=run_encrypt,
-    width=18,
-    height=2,
-)
-encrypt_button.pack(side=tk.LEFT, padx=12)
-style_button(encrypt_button, "#16a34a", "#15803d")
-
-decrypt_button = tk.Button(
-    button_frame,
-    text="Decrypt File",
-    command=run_decrypt,
-    width=18,
-    height=2,
-)
-decrypt_button.pack(side=tk.LEFT, padx=12)
-style_button(decrypt_button, "#dc2626", "#b91c1c")
-
-progress_bar = ttk.Progressbar(main_frame, mode="indeterminate", length=520)
-progress_bar.pack(pady=8)
-
-log_label = tk.Label(
-    main_frame,
-    text="Activity Log",
-    fg="#ffffff",
-    bg="#111827",
-    font=("Segoe UI", 11, "bold"),
-)
-log_label.pack(pady=5)
-
-activity_log = tk.Text(
-    main_frame,
-    height=7,
-    width=78,
-    bg="#030712",
-    fg="#d1d5db",
-    insertbackground="white",
-    relief="flat",
-)
-activity_log.pack(pady=8)
-
-animate_background()
-root.mainloop()
+if __name__ == "__main__":
+    app = ArksEncrypPreview()
+    app.mainloop()
